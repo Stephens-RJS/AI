@@ -36,19 +36,7 @@ void Bot::pickStartingRegion()
 void Bot::placeArmies()
 {
 	//test
-	//std::cout << "number of owned regions: "<< ownedRegions.size() << "\n";
-
-	// output warzones to check them. 
-	//print_warzones();
-
-	//test
-	//std::cout << "updated ";
-	/*
-	unsigned region = std::rand() % ownedRegions.size();
-	std::cout << botName << " place_armies " << ownedRegions[region] << " " << armiesLeft
-		<< std::endl;
-	addArmies(ownedRegions[region], armiesLeft);
-	*/
+	print_warzones();
 	// if warzone DNE place armies equally on all zones. 
 
 	std::vector<std::string> moves;
@@ -57,8 +45,9 @@ void Bot::placeArmies()
 	if (regions[warzones[0]].get_danger() == 0)
 	{
 		int armies = armiesLeft / ownedRegions.size();
-		for (int i = 0; i < ownedRegions.size(); i++)
+		for (int i = 0; i < ownedRegions.size() && armiesLeft != 0; i++)
 		{
+			
 			std::stringstream move;
 			 if (armiesLeft >= armies)
 			{
@@ -71,7 +60,7 @@ void Bot::placeArmies()
 			{
 				move << botName << " place_armies " << ownedRegions[i] << " " << armiesLeft;
 				moves.push_back(move.str());
-				addArmies(ownedRegions[i], armies);
+				addArmies(ownedRegions[i], armiesLeft);
 				armiesLeft -= armiesLeft;
 			}
 
@@ -92,7 +81,7 @@ void Bot::placeArmies()
 	{
 		double Total = enemy_armies;
 		double start_armies = armiesLeft;
-		for (int i = 0; i < warzones.size(); i++)
+		for (int i = 0; i < warzones.size() && armiesLeft != 0; i++)
 		{
 			std::stringstream move;
 			int armies = std::ceil((double)((double)(regions[warzones[i]].get_danger() / Total) * start_armies));
@@ -132,12 +121,14 @@ std::vector<std::string> Bot::transfers()
 	std::vector<std::string> moves;
 	for (int i = 0; i < ownedRegions.size(); i++)
 	{
+		// if region is capable of transfering (2 defenders)
 		if (regions[ownedRegions[i]].getArmies() > 2)
 		{
-			int N = regions[ownedRegions[i]].getNbNeighbors();
-			int highest_threat = -1;
+		
+			int highest_threat = regions[ownedRegions[i]].get_danger();
 			int neighborid = regions[ownedRegions[i]].getNeighbor(0);
-			for (int j = 0; j < N; j++)
+			//for all neighbors 
+			for (int j = 0; j <regions[ownedRegions[i]].getNbNeighbors(); j++)
 			{
 				int next = regions[ownedRegions[i]].getNeighbor(j);
 				if (regions[next].getOwner() == ME)
@@ -152,10 +143,13 @@ std::vector<std::string> Bot::transfers()
 			if (highest_threat > regions[ownedRegions[i]].get_danger())
 			{
 				std::stringstream move;
+				int armies = (regions[i].getArmies() - 2);
 
 				move << botName << " attack/transfer " << ownedRegions[i] << " "
-					<< neighborid << " "
-					<< (regions[i].getArmies() - 2);
+					<< neighborid << " " << armies;
+				subArmies(ownedRegions[i], armies);
+				//any armies added here can't be transfered again and so are not added here. 
+				//addArmies(neighborid, armies);
 				moves.push_back(move.str());
 			}
 		}
@@ -167,12 +161,12 @@ std::vector<std::string> Bot::transfers()
 std::vector<std::string> Bot::attacks()
 {
 	std::vector<std::string> moves;
+	//for all enemy regions visible
 	for (int i = 0; i < enemy_regions.size(); i++)
 	{
-		int needed = std::floor(((double)regions[enemy_regions[i]].getArmies() * 1.8));
-			int N = regions[enemy_regions[i]].getNbNeighbors();
+		int needed = std::floor(((double)regions[enemy_regions[i]].getArmies() * 1.6));
 			int neighborid = regions[enemy_regions[i]].getNeighbor(0);
-			for (int j = 0; j < N; j++)
+			for (int j = 0; j <regions[enemy_regions[i]].getNbNeighbors(); j++)
 			{
 				int next = regions[enemy_regions[i]].getNeighbor(j);
 				if (regions[next].getOwner() == ME)
@@ -199,6 +193,8 @@ std::vector<std::string> Bot::attacks()
 void Bot::makeMoves()
 {
 	// START HERE!
+	/*
+	//default_behavior
 	std::vector<std::string> moves;
 	for (size_t j = 0; j < ownedRegions.size(); ++j)
 	{
@@ -221,7 +217,7 @@ void Bot::makeMoves()
 	}
 
 	std::cout << string::join(moves) << std::endl;
-	
+	*/
 	
 	
 	
@@ -230,9 +226,7 @@ void Bot::makeMoves()
 	/// Anatomy of a single move
 	//  std::cout << botName << " attack/transfer " << from << " " << to << " "<< armiesMoved;
 	/// When outputting multiple moves they must be seperated by a comma
-	/*
-	if (!moved)
-		moved = true;
+	
 	
 	std::vector<std::string> moves;
 
@@ -248,6 +242,8 @@ void Bot::makeMoves()
 	{
 		moves.push_back(*itr);
 	}
+
+
 
 
 	/*
@@ -277,10 +273,10 @@ void Bot::makeMoves()
 				<< (regions[i].getArmies() - 1);
 		moves.push_back(move.str());
 	}
-	
+	*/
 
 	std::cout << string::join(moves) << std::endl;
-	*/
+
 }
 
 void Bot::addRegion(const unsigned& noRegion, const unsigned& noSuperRegion)
@@ -418,6 +414,7 @@ void Bot::updateRegion(const unsigned& noRegion, const  std::string& playerName,
 	else
 	{
 		owner = NEUTRAL;
+		enemy_regions.push_back(noRegion);
 		//enemy_armies += nbArmies;
 	}
 		
