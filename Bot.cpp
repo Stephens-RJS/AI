@@ -236,12 +236,12 @@ void Bot::makeMoves()
 	std::vector<std::string>::iterator itr;
 	for (itr = convoy.begin(); itr != convoy.end(); itr++)
 	{
-		//moves.push_back(*itr);
+		moves.push_back(*itr);
 	}
 	
 	for (itr = charge.begin(); itr != charge.end(); itr++)
 	{
-		//moves.push_back(*itr);
+		moves.push_back(*itr);
 	}
 
 
