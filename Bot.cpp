@@ -164,7 +164,7 @@ std::vector<std::string> Bot::attacks()
 	//for all enemy regions visible
 	for (int i = 0; i < enemy_regions.size(); i++)
 	{
-		int needed = std::floor(((double)regions[enemy_regions[i]].getArmies() * 1.6));
+		int needed = std::ceil(((double)regions[enemy_regions[i]].getArmies() *(double)1.6));
 			int neighborid = regions[enemy_regions[i]].getNeighbor(0);
 			for (int j = 0; j <regions[enemy_regions[i]].getNbNeighbors(); j++)
 			{
@@ -172,7 +172,7 @@ std::vector<std::string> Bot::attacks()
 				if (regions[next].getOwner() == ME)
 				{
 					// if there are enough of our armies to conquer their region attack. 
-					if (regions[next].getArmies() >= needed)
+					if (regions[next].getArmies() > needed + 1)
 					{
 						std::stringstream move;
 
