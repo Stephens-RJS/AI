@@ -143,7 +143,7 @@ std::vector<std::string> Bot::transfers()
 			if (highest_threat > regions[ownedRegions[i]].get_danger())
 			{
 				std::stringstream move;
-				int armies = (regions[i].getArmies() - 2);
+				int armies = (regions[ownedRegions[i]].getArmies() - 2);
 
 				move << botName << " attack/transfer " << ownedRegions[i] << " "
 					<< neighborid << " " << armies;
@@ -164,7 +164,8 @@ std::vector<std::string> Bot::attacks()
 	//for all enemy regions visible
 	for (int i = 0; i < enemy_regions.size(); i++)
 	{
-		int needed = std::ceil(((double)regions[enemy_regions[i]].getArmies() *(double)1.6));
+		int needed = std::ceil(((double)regions[enemy_regions[i]].getArmies() *(double)1.5));
+		if (needed < 2){ needed = 2; }
 			int neighborid = regions[enemy_regions[i]].getNeighbor(0);
 			for (int j = 0; j <regions[enemy_regions[i]].getNbNeighbors(); j++)
 			{
@@ -172,7 +173,7 @@ std::vector<std::string> Bot::attacks()
 				if (regions[next].getOwner() == ME)
 				{
 					// if there are enough of our armies to conquer their region attack. 
-					if (regions[next].getArmies() > needed + 1)
+					if (regions[next].getArmies() > needed + 1 )
 					{
 						std::stringstream move;
 
@@ -235,12 +236,12 @@ void Bot::makeMoves()
 	std::vector<std::string>::iterator itr;
 	for (itr = convoy.begin(); itr != convoy.end(); itr++)
 	{
-		moves.push_back(*itr);
+		//moves.push_back(*itr);
 	}
 	
 	for (itr = charge.begin(); itr != charge.end(); itr++)
 	{
-		moves.push_back(*itr);
+		//moves.push_back(*itr);
 	}
 
 
@@ -274,6 +275,16 @@ void Bot::makeMoves()
 		moves.push_back(move.str());
 	}
 	*/
+	//check for no moves
+	if (moves.empty())
+	{
+		std::stringstream move;
+
+		 move << botName << " No moves";
+		moves.push_back(move.str());
+	}
+
+
 
 	std::cout << string::join(moves) << std::endl;
 
