@@ -124,7 +124,7 @@ std::vector<std::string> Bot::transfers()
 		// if region is capable of transfering (2 defenders)
 		if (regions[ownedRegions[i]].getArmies() > 2)
 		{
-		
+			//start 
 			int highest_threat = regions[ownedRegions[i]].get_danger();
 			int neighborid = regions[ownedRegions[i]].getNeighbor(0);
 			//for all neighbors 
@@ -140,10 +140,18 @@ std::vector<std::string> Bot::transfers()
 
 			}
 			// if a neighbor exists with a higher threat level
-			if (highest_threat > regions[ownedRegions[i]].get_danger())
+			if (highest_threat > regions[ownedRegions[i]].get_danger() || highest_threat == 0)
 			{
+				// if no threat all bordering regions are frendly so transfer to a random one of them. 
+				if (highest_threat == 0)
+				{
+					neighborid = regions[ownedRegions[i]].getNeighbor(rand() % regions[ownedRegions[i]].getNbNeighbors());
+				}
+
 				std::stringstream move;
 				int armies = (regions[ownedRegions[i]].getArmies() - 2);
+
+				
 
 				move << botName << " attack/transfer " << ownedRegions[i] << " "
 					<< neighborid << " " << armies;
@@ -547,8 +555,13 @@ void Bot::reset_stats()
 	enemy_armies = 0;
 	enemy_regions.clear();
 	warzones.clear();
-
+	int i = 0;
+	while (i < regions.size())
+	{
+		regions[i++].reset_war();
+	}
 }
+
 
 void Bot::insert_warzone(int W)
 {

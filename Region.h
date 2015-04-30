@@ -29,6 +29,7 @@ public:
 	void set_war(int Zones, int Danger);
 	int get_danger();
 	int get_zones();
+	void reset_war(); // resets enemy_zones and danger of regions
 
 private:
 	std::vector<int> neighbors;

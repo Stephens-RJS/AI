@@ -123,6 +123,7 @@ void Parser::parseUpdateMap()
 	int nbArmies;
 	theBot->resetRegionsOwned();
 	theBot->reset_stats();
+
 	
 	while (std::cin >> noRegion >> playerName >> nbArmies)
 	{

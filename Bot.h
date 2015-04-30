@@ -99,6 +99,7 @@ public:
 	void insert_warzone(int W); // inserts regionID W into warzone vector
 	void reset_stats(); // resets stats before update regions is called. 
 	void print_warzones();
+	
 
 
 

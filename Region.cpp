@@ -56,6 +56,12 @@ void Region::set_war(int Zones, int Danger)
 	danger = Danger;
 }
 
+void Region::reset_war()
+{
+	enemy_zones = 0;
+	danger = 0;
+}
+
 int Region::get_danger()
 {
 	return danger;
