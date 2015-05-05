@@ -30,6 +30,16 @@ public:
 	int get_danger();
 	int get_zones();
 	void reset_war(); // resets enemy_zones and danger of regions
+	int get_enemy_zones();
+	void set_enemy_zones(int zones);
+	int get_neutral_zones();
+	void set_neutral_zones(int zones);
+	void set_enemy_armies(int armies);
+	int get_enemy_armies();
+	void set_neutral_armies(int armies);
+	int get_neutral_armies();
+
+
 
 private:
 	std::vector<int> neighbors;
@@ -39,8 +49,10 @@ private:
 	int armies;
 	// custom info
 	int enemy_zones; // enemy countries bordering region
+	int neutral_zones;
 	int danger; // number of enemy armies bordering region
-
+	int enemy_armies;
+	int neutral_armies;
 };
 
 #endif // REGION_H
