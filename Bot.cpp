@@ -9,7 +9,7 @@
 #include "tools/StringManipulation.h"
 
 Bot::Bot() :
-armiesLeft(0), timebank(0), timePerMove(0), maxRounds(0), parser(this), phase(NONE), moved(false)
+armiesLeft(0), timebank(0), timePerMove(0), maxRounds(0), parser(this), phase(NONE), moved(false), next_pick(0)
 {
 }
 
@@ -27,12 +27,30 @@ void Bot::pickStartingRegion()
 {
 	// START HERE!
 	// right now automatically picks first choice
-	std::cout << startingRegionsreceived.front() << std::endl;
+	
 
-	//
+	//search starting regions recieved for priority's place. 
+	bool found = false;
+	while (!found)
+	{
+		for (int r : startingRegionsreceived)
+		{
+			if (r == priority[next_pick])
+			{
+				found = true;
+				std::cout << r << std::endl;
+				next_pick++;
+				return;
+			}
+		}
+		next_pick++;
+	}
+
+
 
 }
-
+	
+	
 void Bot::placeArmies()
 {
 	//test
@@ -119,50 +137,43 @@ void Bot::placeArmies()
 std::vector<std::string> Bot::transfers()
 {
 	std::vector<std::string> moves;
+
+	
 	for (int i = 0; i < ownedRegions.size(); i++)
 	{
-		// if region is capable of transfering (2 defenders)
-		if (regions[ownedRegions[i]].getArmies() > 2)
+		// if region is capable of transfering (2 defenders) and does not border an enemy
+		if (regions[ownedRegions[i]].getArmies() > 1 && regions[ownedRegions[i]].get_enemy_zones() == 0)
 		{
 			//start 
-			int highest_threat = regions[ownedRegions[i]].get_danger();
-			int neighborid = regions[ownedRegions[i]].getNeighbor(0);
+			int highest_threat = 0;
+			int neighborid = regions[ownedRegions[i]].getNeighbor(rand() % regions[ownedRegions[i]].getNbNeighbors());
 			//for all neighbors 
 			for (int j = 0; j <regions[ownedRegions[i]].getNbNeighbors(); j++)
 			{
 				int next = regions[ownedRegions[i]].getNeighbor(j);
 				if (regions[next].getOwner() == ME)
 				{
-					highest_threat = (regions[next].get_danger() > highest_threat) ? regions[next].get_danger() : highest_threat;
-					neighborid = (regions[next].get_danger() > highest_threat) ? next : neighborid;
+					highest_threat = (regions[next].get_enemy_armies() > highest_threat) ? regions[next].get_enemy_armies() : highest_threat;
+					neighborid = (regions[next].get_enemy_armies() > highest_threat) ? next : neighborid;
 				}
 				
 
 			}
-			// if a neighbor exists with a higher threat level
-			if (highest_threat > regions[ownedRegions[i]].get_danger() || highest_threat == 0)
-			{
-				// if no threat all bordering regions are frendly so transfer to a random one of them. 
-				if (highest_threat == 0)
-				{
-					neighborid = regions[ownedRegions[i]].getNeighbor(rand() % regions[ownedRegions[i]].getNbNeighbors());
-				}
+		
 
 				std::stringstream move;
-				int armies = (regions[ownedRegions[i]].getArmies() - 2);
-
-				
-
+				int armies = (regions[ownedRegions[i]].getArmies() - 1);
 				move << botName << " attack/transfer " << ownedRegions[i] << " "
 					<< neighborid << " " << armies;
 				subArmies(ownedRegions[i], armies);
 				//any armies added here can't be transfered again and so are not added here. 
 				//addArmies(neighborid, armies);
 				moves.push_back(move.str());
-			}
+			
 		}
 		
 	}
+	
 	return moves;
 }
 
@@ -406,7 +417,7 @@ void Bot::makeMoves()
 	}
 	for(itr = convoy.begin(); itr != convoy.end(); itr++)
 	{
-		//moves.push_back(*itr);
+		moves.push_back(*itr);
 	}
 
 
@@ -475,11 +486,16 @@ void Bot::addWasteland(const unsigned &noRegion)
 }
 void Bot::addSuperRegion(const unsigned& noSuperRegion, const int&reward)
 {
+	// nosuper is super id, reward is reward
 	while (superRegions.size() <= noSuperRegion)
 	{
 		superRegions.push_back(SuperRegion());
+		std::vector<int> X;
+		starting_sort.push_back(std::pair<double, std::vector<int>>(0, X));
 	}
 	superRegions[noSuperRegion] = SuperRegion(reward);
+	
+
 }
 
 void Bot::setBotName(const std::string& name)
@@ -510,11 +526,51 @@ void Bot::setMaxRounds(const int &newMaxRounds)
 void Bot::clearStartingRegions()
 {
 	startingRegionsreceived.clear();
+
+}
+
+void Bot::prioritize()
+{
+	// turn first values into percentages
+	for (int i = 0; i < superRegions.size(); i++)
+	{
+		starting_sort[i].first /= superRegions[i].size();
+	}
+	std::sort(starting_sort.begin(), starting_sort.end());
+	int x = 0;
+	while (x < starting_sort.size())
+	{
+		int y = 0;
+		while (y < starting_sort[x].second.size())
+		{
+			priority.push_back(starting_sort[x].second[y]);
+			y++;
+		}
+		x++;
+	}
+	
+
+
+
+
+}
+
+
+void Bot::addStartingRegionnow(const unsigned& noRegion)
+{
+	startingRegionsreceived.push_back(noRegion);
 }
 
 void Bot::addStartingRegion(const unsigned& noRegion)
 {
+
+	starting_sort[regions[noRegion].getSuperRegion()].first++;
+	starting_sort[regions[noRegion].getSuperRegion()].second.push_back(noRegion);	
 	startingRegionsreceived.push_back(noRegion);
+
+
+
+
 }
 
 void Bot::addOpponentStartingRegion(const unsigned& noRegion)

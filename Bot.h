@@ -99,8 +99,8 @@ public:
 	void insert_warzone(int W); // inserts regionID W into warzone vector
 	void reset_stats(); // resets stats before update regions is called. 
 	void print_warzones();
-	
-
+	void addStartingRegionnow(const unsigned& noRegion);
+	void prioritize(); // prioritizes the options for starting regions. 
 
 
 private:
@@ -126,6 +126,11 @@ private:
 	int enemy_armies;// total number of enemy armies we can see(counts multiples). 
 	std::vector<int> warzones; // sorted vector of waring regions
 	bool moved;//indicates weather or not we have had our first turn
+	// 
+	std::vector<int> priority;
+	std::vector<std::pair<double, std::vector<int>>> starting_sort;
+	int next_pick;
+
 
 };
 

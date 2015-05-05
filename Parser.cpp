@@ -113,6 +113,7 @@ void Parser::parseSettings()
 			if (lineEnds())
 				break;
 		}
+		theBot->prioritize();
 	}
 }
 
@@ -212,7 +213,7 @@ void Parser::parsePickStartingRegion()
 	theBot->clearStartingRegions();
 	while (std::cin >> region)
 	{
-		theBot->addStartingRegion(region);
+		theBot->addStartingRegionnow(region);
 		if (lineEnds())
 			break;
 	}
