@@ -68,7 +68,7 @@ void Bot::placeArmies()
 		while (places.size() > z && places[z].first <= armiesLeft)
 		{
 			std::stringstream move;
-			move << botName << " place_armies " << places[z].second << " " << armiesLeft;
+			move << botName << " place_armies " << places[z].second << " " << places[z].first;
 			moves.push_back(move.str());
 			addArmies(places[z].second, places[z].first);
 			armiesLeft -= places[z].first;
@@ -91,7 +91,7 @@ void Bot::placeArmies()
 		}
 
 	}
-
+	// if no priorities
 	else{
 		// rules for if no warzones exist. 
 		if (regions[warzones[0]].get_danger() == 0)
