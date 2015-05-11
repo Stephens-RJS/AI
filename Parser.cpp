@@ -137,6 +137,9 @@ void Parser::parseUpdateMap()
 	//test
 	//std::cout << "creating\n";
 	theBot->createWarzones();
+	theBot->reset_attacked();
+	theBot->queue_priority();
+	theBot->process();
 }
 
 void Parser::parseOpponentMoves()

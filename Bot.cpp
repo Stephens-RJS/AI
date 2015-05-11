@@ -54,12 +54,24 @@ void Bot::pickStartingRegion()
 void Bot::placeArmies()
 {
 	//test
-	print_warzones();
+	//print_warzones();
 	// if warzone DNE place armies equally on all zones. 
 
 	std::vector<std::string> moves;
+	int z = 0;
+	//run through the places that need armies for attacking. 
+	while (places.size() > z && places[z].first <= armiesLeft)
+	{
+		std::stringstream move;
+		move << botName << " place_armies " << places[z].second << " " << places[z].first;
+		moves.push_back(move.str());
+		addArmies(places[z].second, places[z].first);
+		z++;
+		armiesLeft -= armiesLeft;
+	}
+	if (armiesLeft == 0){ return; }
 	
-
+	// rules for if no warzones exist. 
 	if (regions[warzones[0]].get_danger() == 0)
 	{
 		int armies = armiesLeft / ownedRegions.size();
@@ -198,53 +210,70 @@ std::vector<std::string> Bot::attacks()
 			bool important = false;
 				
 				// priority goes: in same super region, enemies, neutral.
+
 				// search through neighbors
 				for (int r = 0; r < regions[warzones[i]].getNbNeighbors(); r++)
 				{
 					
-					//elimination check
-					
-
-					// armies needed to conquer a region
-					int needed = std::ceil(((double)(regions[regions[warzones[i]].getNeighbor(r)].getArmies()) *(double)1.61));
-					if (needed < 2){ needed = 2; }
-					// only do if there are enough armies to attack this neighbor
-					if (regions[warzones[i]].getArmies() > needed)
+					//elimination check do not attack a place if it has already been attacked
+					if (!attacked[regions[warzones[i]].getNeighbor(r)])
 					{
 
 
+						// armies needed to conquer a region
+						int needed = std::ceil(((double)(regions[regions[warzones[i]].getNeighbor(r)].getArmies()) *(double)1.61));
+						if (needed < 2){ needed = 2; }
+						
 						//if super region
 						if (regions[regions[warzones[i]].getNeighbor(r)].getSuperRegion() == regions[warzones[i]].getSuperRegion())
 						{
-							//if enemy -- priority
-							if (regions[regions[warzones[i]].getNeighbor(r)].getOwner() == ENEMY)
-							{
-								important = true;
-								std::stringstream move;
 
-								move << botName << " attack/transfer " << warzones[i] << " "
-									<< regions[warzones[i]].getNeighbor(r) << " "
-									<< (needed);
-								subArmies(warzones[i], needed);
-								moves.push_back(move.str());
-							}
-							//if neutral -- 2nd priority
-							else if (regions[regions[warzones[i]].getNeighbor(r)].getOwner() == NEUTRAL
-								&& regions[warzones[i]].getArmies() > needed)
-							{
-								okay_moves.push_back(std::pair<int, int>(needed, regions[warzones[i]].getNeighbor(r)));
 
+							
+							// only do if there are enough armies to attack this neighbor
+							if (regions[warzones[i]].getArmies() > needed)
+							{
+								//if enemy -- priority
+								if (regions[regions[warzones[i]].getNeighbor(r)].getOwner() == ENEMY)
+								{
+									important = true;
+									std::stringstream move;
+
+									move << botName << " attack/transfer " << warzones[i] << " "
+										<< regions[warzones[i]].getNeighbor(r) << " "
+										<< (needed);
+									subArmies(warzones[i], needed);
+									attacked[regions[warzones[i]].getNeighbor(r)] = true;
+									moves.push_back(move.str());
+								}
+								//if neutral -- 2nd priority
+								else if (regions[regions[warzones[i]].getNeighbor(r)].getOwner() == NEUTRAL
+									&& regions[warzones[i]].getArmies() > needed)
+								{
+									okay_moves.push_back(std::pair<int, int>(needed, regions[warzones[i]].getNeighbor(r)));
+
+								}
+
+							}// end enough armies
+							// if super region priority but not enough armies, add to targets. 
+							else
+							{
+								targets.push_back(std::pair<int, double>(regions[warzones[i]].getNeighbor(r), 0));
 							}
+
 
 						}// end same super region
-
-						else if (regions[regions[warzones[i]].getNeighbor(r)].getOwner() != ME)
-						{
-							alright_moves.push_back(std::pair<int, int>(needed, regions[warzones[i]].getNeighbor(r)));
-						}
-					}
-
+						else if (regions[regions[warzones[i]].getNeighbor(r)].getOwner() != ME
+							&& regions[warzones[i]].getArmies() > needed)
+							{
+								alright_moves.push_back(std::pair<int, int>(needed, regions[warzones[i]].getNeighbor(r)));
+							}
+						
+					
+					
+					}// done if already attacked. 
 				}// done searching through neighbors
+					
 				
 				// if no important moves have been made. 
 				if (!important){
@@ -260,8 +289,9 @@ std::vector<std::string> Bot::attacks()
 							<< (okay_moves[j].first);
 						subArmies(warzones[i], okay_moves[j].first);
 						moves.push_back(move.str());
+						attacked[okay_moves[j].second] = true;
 						j++;
-					}
+					} 
 
 					
 						std::sort(alright_moves.begin(), alright_moves.end());
@@ -275,6 +305,7 @@ std::vector<std::string> Bot::attacks()
 								<< (alright_moves[j].first);
 							subArmies(warzones[i], alright_moves[j].first);
 							moves.push_back(move.str());
+							attacked[alright_moves[j].second] = true;
 							j++;
 						}
 
@@ -287,46 +318,89 @@ std::vector<std::string> Bot::attacks()
 	return moves;
 }
 
+// does everything needed to capture a region by invading from multiple adjacent regions. 
+std::vector<std::string> Bot::surround(bool* can, int id, int* required, int* place)
+{
+
+	std::vector<std::string> moves;
+	std::vector<std::pair<int, int>> used;
+
+
+	int needed = std::ceil(((double)(regions[id].getArmies()) *(double)1.61));
+	if (needed < 2){ needed = 2; }
+	int found = 0;
+	can = false;
+	for (int i = 0; i < regions[id].getNbNeighbors() || found >= needed; i++)
+	{
+		if (regions[regions[id].getNeighbor(i)].getOwner() == ME)
+		{
+			*place = regions[id].getNeighbor(i);
+			if (regions[regions[id].getNeighbor(i)].getArmies() >= 4)
+			{
+
+				std::stringstream move;
+				move << botName << " attack/transfer " << regions[id].getNeighbor(i) << " "
+					<< id << " "
+					<< regions[regions[id].getNeighbor(i)].getArmies() - 2;
+				moves.push_back(move.str());
+				used.push_back(std::pair<int, int>(regions[id].getNeighbor(i), regions[regions[id].getNeighbor(i)].getArmies() - 2));
+				found += regions[regions[id].getNeighbor(i)].getArmies() - 2;
+			}
+		}
+		
+	}
+
+	if (found >= needed)
+		*can = true;
+	if (can)
+	{
+		for (std::pair<int, int> sub : used)
+		{
+			subArmies(sub.first, sub.second);
+		}
+		attacked[id] = true;
+	}
+	*required = needed - found;
+
+	return moves;
+}
+
+std::vector<std::string> Bot::process()
+{
+	// globalmoves
+	bool can = false;
+	int required = 0;
+	int place = 0;
+
+	for (int i = 0; i < targets.size(); i++)
+	{
+		std::vector<std::string> att = surround(&can, targets[i].first, &required, &place );
+		if (can)
+		{
+			for (std::string X : att)
+			{
+				priority_attacks.push_back(X);
+			}
+
+			//global.push_back(att);
+		}
+		//if not enought to attack update queue on where to put armies. 
+		else
+		{
+			places.push_back(std::pair<int, int>(required, place));
+		}
+	}
+	std::sort(places.begin(), places.end());
+	targets.clear();
+}
+
+
+
 
 void Bot::makeMoves()
 {
-	// START HERE!
-	/*
-	//default_behavior
-	std::vector<std::string> moves;
-	for (size_t j = 0; j < ownedRegions.size(); ++j)
-	{
-		std::stringstream move;
-		int i = ownedRegions[j];
-		if (regions[i].getArmies() <= 1)
-			continue;
-
-		int target = regions[i].getNeighbor(std::rand() % regions[i].getNbNeighbors());
-		// prefer enemy regions
-		for (unsigned k = 0; k < 5; ++k)
-		{
-			if (regions[target].getOwner() != ME) break;
-			target = regions[i].getNeighbor(std::rand() % regions[i].getNbNeighbors());
-		}
-		move << botName << " attack/transfer " << i << " "
-			<< target << " "
-			<< (regions[i].getArmies() - 1);
-		moves.push_back(move.str());
-	}
-
-	std::cout << string::join(moves) << std::endl;
-	*/
-	
-	
-	
-	/// Output No moves when you have no time left or do not want to commit any moves.
-	// std::cout << "No moves "  << std::endl;
-	/// Anatomy of a single move
-	//  std::cout << botName << " attack/transfer " << from << " " << to << " "<< armiesMoved;
-	/// When outputting multiple moves they must be seperated by a comma
-	
-	
-	std::vector<std::string> moves;
+	// set moves to be the priority attacks we have set up previously. 
+	std::vector<std::string> moves = priority_attacks;
 
 	std::vector<std::string> convoy = transfers();
 	std::vector<std::string> charge = attacks();
@@ -341,37 +415,6 @@ void Bot::makeMoves()
 		moves.push_back(*itr);
 	}
 
-
-
-
-	/*
-	
-
-
-	// for each region owned
-	for (size_t j = 0; j < ownedRegions.size(); ++j)
-	{
-		std::stringstream move;
-		int i = ownedRegions[j];
-		//skip over regions with only 1 army on them (because you can't move the last soldier)
-		if (regions[i].getArmies() <= 1)
-			continue;
-		// decides random region to invade
-		int target = regions[i].getNeighbor(std::rand() % regions[i].getNbNeighbors());
-		
-		// prefer enemy regions
-		for ( unsigned k = 0; k < 5; ++k)
-		{
-			if(regions[target].getOwner() != ME) break;
-			target = regions[i].getNeighbor(std::rand() % regions[i].getNbNeighbors());
-		}
-		// attack with full army. 
-		move << botName << " attack/transfer " << i << " "
-				<< target << " "
-				<< (regions[i].getArmies() - 1);
-		moves.push_back(move.str());
-	}
-	*/
 	//check for no moves
 	if (moves.empty())
 	{
@@ -392,6 +435,7 @@ void Bot::addRegion(const unsigned& noRegion, const unsigned& noSuperRegion)
 	while (regions.size() <= noRegion)
 	{
 		regions.push_back(Region());
+		attacked.push_back(false);
 	}
 	regions[noRegion] = Region(noRegion, noSuperRegion);
 	superRegions[noSuperRegion].addRegion(noRegion);
@@ -601,10 +645,77 @@ void Bot::updateRegion(const unsigned& noRegion, const  std::string& playerName,
 
 		}
 	}
+	
 
 }
 
+void Bot::queue_priority()
+{
+	std::vector<std::pair<int, double>> sorted;
+	// iterate over potential targets 
+	for (int i = 0; i < targets.size(); i++)
+	{
+		// get thier superRegion info
+		int super = regions[targets[i].first].getSuperRegion();
+		// get uncontrolled regions
+		std::vector<int> ex_regions = superRegions[super].get_regions();
+		int unconquered;
+		int un_enemy; // 
+		int ours;
+		
+		//search the info of the targets super region. 
+		for (int s = 0; s < ex_regions.size(); s++)
+		{
+			// find the number of unconquered regions,
+			// and enemy armies in that super region we must still conquer
+			if (regions[ex_regions[s]].getOwner() != ME)
+			{
+				unconquered++;
+				un_enemy += regions[ex_regions[s]].getArmies();
+			}
+		}
+		// set priority of this target based on its super region info. 
+		targets[i].second = (double)superRegions[super].get_reward()
+			/ (double)(unconquered * un_enemy);
 
+		// place target into sorted vector of targets.
+		if (sorted.size() == 0 || targets[i].second > sorted[sorted.size() -1].second )
+		{
+			sorted.push_back(targets[i]);
+		}
+
+		else
+		{
+			std::vector<std::pair<int, double>>::iterator itr = sorted.begin();
+			while (targets[i].second  < itr->second && itr != sorted.end())
+			{
+				itr++;
+			}
+			sorted.insert(itr, targets[i]);
+		}
+	}//end for loop
+
+	targets.clear();
+	targets = sorted;
+}
+
+
+
+
+
+void Bot::reset_attacked()
+{
+	for (int i = 0; i < attacked.size() i++)
+	{
+		attacked[i] = false;
+	}
+	priority_attacks.clear();
+
+}
+bool Bot::check_attacked(int spot)
+{
+	return attacked[spot];
+}
 void Bot::addArmies(const unsigned& noRegion, const int& nbArmies)
 {
 	my_armies += nbArmies;
@@ -643,7 +754,6 @@ void Bot::resetRegionsOwned()
 {
 	ownedRegions.clear();
 }
-
 
  std::vector<int> Bot::sortwarzones(std::vector<int> zones)
  {
@@ -712,7 +822,6 @@ void Bot::reset_stats()
 		regions[i++].reset_war();
 	}
 }
-
 
 void Bot::insert_warzone(int W)
 {

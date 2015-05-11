@@ -53,6 +53,7 @@ private:
 	int danger; // number of enemy armies bordering region
 	int enemy_armies;
 	int neutral_armies;
+	
 };
 
 #endif // REGION_H

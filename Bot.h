@@ -102,6 +102,12 @@ public:
 	void addStartingRegionnow(const unsigned& noRegion);
 	void prioritize(); // prioritizes the options for starting regions. 
 
+	std::vector<std::string> surround(bool* can, int id, int* required, int* place);// returns attacks that will conquer a region
+	void reset_attacked(); //resets attacking vector
+	void queue_priority();
+	void process_targets();
+	std::vector<std::string> process();
+	
 
 private:
 	std::ifstream in;
@@ -130,6 +136,12 @@ private:
 	std::vector<int> priority;
 	std::vector<std::pair<double, std::vector<int>>> starting_sort;
 	int next_pick;
+	std::vector<bool> attacked;// used to keep track of which regions have been attacked. 
+	std::vector<std::pair<int, double>> targets; // enemyid, priority
+	std::vector<int,int> places; // armies required, regionid to place those armies
+	std::vector<std::string> priority_attacks;// string of attacks to be done first
+
+
 
 
 };
