@@ -68,7 +68,7 @@ void Bot::placeArmies()
 		while (places.size() > z && places[z].first <= armiesLeft)
 		{
 			std::stringstream move;
-			move << botName << " place_armies " << places[z].second << " " << places[z].first;
+			move << botName << " place_armies " << places[z].second << " " << armiesLeft;
 			moves.push_back(move.str());
 			addArmies(places[z].second, places[z].first);
 			armiesLeft -= places[z].first;
@@ -343,6 +343,69 @@ std::vector<std::string> Bot::attacks()
 	return moves;
 }
 
+std::vector<std::string> Bot::finishIt()
+{
+	std::vector<std::string> moves;
+	std::vector<std::string> final_moves;
+	std::vector<std::pair<int, int>> used;
+	// search through all enemy_regions
+	for (int i = 0; i < enemy_regions.size(); i++)
+	{
+		int found = 0;
+		// armies needed to conquer a region
+		int needed = std::ceil(((double)(regions[enemy_regions[i]].getArmies()) *(double)1.61));
+		if (needed < 2){ needed = 2; }
+		// only do if there are enough armies to attack this neighbor
+
+		// run surround functionality
+		int id = enemy_regions[i];
+
+		// iterate through target's neighbors
+		for (int i = 0; i < regions[id].getNbNeighbors() && found < needed * 2; i++)
+		{
+			if (regions[regions[id].getNeighbor(i)].getOwner() == ME)
+			{
+				if (regions[regions[id].getNeighbor(i)].getArmies() >= 4)
+				{
+					std::stringstream move;
+					move << botName << " attack/transfer " << regions[id].getNeighbor(i) << " "
+						<< id << " "
+						<< regions[regions[id].getNeighbor(i)].getArmies() - 2;
+					moves.push_back(move.str());
+					used.push_back(std::pair<int, int>(regions[id].getNeighbor(i), regions[regions[id].getNeighbor(i)].getArmies() - 2));
+					found += regions[regions[id].getNeighbor(i)].getArmies() - 2;
+				}
+			}
+
+		}
+		if (found > needed)
+		{
+			
+			std::vector<std::string>::iterator itr;
+			for (itr = moves.begin(); itr != moves.end(); itr++)
+			{
+				final_moves.push_back(*itr);
+			}
+
+			for (std::pair<int, int> sub : used)
+			{
+				subArmies(sub.first, sub.second);
+			}
+		}
+		else
+		{
+			targets.push_back(std::pair<int, double>(id, 0.0));
+
+		}
+	}
+
+
+
+
+
+	return final_moves;
+}
+
 // does everything needed to capture a region by invading from multiple adjacent regions. 
 std::vector<std::string> Bot::surround(bool* can, int id, int* required, int* place)
 {
@@ -425,7 +488,17 @@ void Bot::makeMoves()
 	std::vector<std::string> moves = priority_attacks;
 
 	std::vector<std::string> convoy = transfers();
-	std::vector<std::string> charge = attacks();
+	std::vector<std::string> charge;
+
+	if (regions.size() - ownedRegions.size() <= 5)
+	{
+		charge = finishIt();
+	}
+	else
+	{
+		 charge = attacks();
+	}
+	
 	std::vector<std::string>::iterator itr;
 	
 	for (itr = charge.begin(); itr != charge.end(); itr++)

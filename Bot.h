@@ -96,6 +96,7 @@ public:
 	
 	std::vector<std::string> transfers();
 	std::vector<std::string> attacks();
+	std::vector<std::string> finishIt();
 	void insert_warzone(int W); // inserts regionID W into warzone vector
 	void reset_stats(); // resets stats before update regions is called. 
 	void print_warzones();
@@ -140,7 +141,7 @@ private:
 	std::vector<std::pair<int, double>> targets; // enemyid, priority
 	std::vector<std::pair<int,int>> places; // armies required, regionid to place those armies
 	std::vector<std::string> priority_attacks;// string of attacks to be done first
-
+	
 
 
 
